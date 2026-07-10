@@ -10,11 +10,11 @@ export const bootstrap = (app) => {
   const httpServer = http.createServer(app);
   const io = new Server(httpServer);
 
+  
+    app.get("/", (req, res) => {
+      res.send("Quiz is up and running!");
+    });
   app.use("/api/quiz", questionRouter);
-
-  app.get("/", (req, res) => {
-    res.send("Quiz is up and running!");
-  });
 
   io.on("connection", (socket) => {
     console.log("a user connected:", socket.id);
