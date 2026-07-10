@@ -1,0 +1,80 @@
+{
+  "info": {
+    "name": "Live Quiz Arena API",
+    "_postman_id": "e2a2f911-4b1c-4aee-9a57-bb9862f5f79a",
+    "description": "Collection to test quiz creation and retrieval endpoints for Live Quiz Arena.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/",
+          "host": ["{{baseUrl}}"],
+          "path": [""]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Quiz Question",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"What is 2 + 2?\",\n  \"options\": [\n    { \"text\": \"3\", \"isCorrect\": false },\n    { \"text\": \"4\", \"isCorrect\": true },\n    { \"text\": \"5\", \"isCorrect\": false }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/quiz/{{quizCode}}/questions",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "quiz", "{{quizCode}}", "questions"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Quiz Questions",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/quiz/{{quizCode}}/questions",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "quiz", "{{quizCode}}", "questions"]
+        }
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set default baseUrl if not defined",
+          "if (!pm.variables.get('baseUrl')) {",
+          "  pm.variables.set('baseUrl', 'http://localhost:3000');",
+          "}",
+          "if (!pm.variables.get('quizCode')) {",
+          "  pm.variables.set('quizCode', 'demoQuiz');",
+          "}"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head><title>Quiz Client Test</title></head>
+<body>  
+  <h1>Open your browser console</h1>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>  
+    const socket = io(); // connects to the server that served this page
+    socket.on('connect', () => { 
+      console.log('Connected! My socket id is:', socket.id);
+    });
+  </script>
+</body>
+</html>

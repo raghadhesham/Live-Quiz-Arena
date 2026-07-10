@@ -1,0 +1,23 @@
+{
+  "name": "live-quiz-arena",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start:dev": "nodemon src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "type": "module",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mongodb": "^7.5.0",
+    "mongoose": "^9.7.4",
+    "nodemon": "^3.1.14",
+    "socket.io": "^4.8.3",
+    "zod": "^3.25.76"
+  }
+}
