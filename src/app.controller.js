@@ -9,9 +9,9 @@ import { checkConnectionDB } from "./DB/connectionDB.js";
 
 export const bootstrap = async(app) => {
   await checkConnectionDB();
+  app.use("/api/quiz", questionRouter);
   const httpServer = http.createServer(app);
   const io = new Server(httpServer);
-  app.use("/api/quiz", questionRouter);
   io.on("connection", (socket) => {
     console.log("a user connected:", socket.id);
     socket.on("join-quiz", (quizCode) => {
