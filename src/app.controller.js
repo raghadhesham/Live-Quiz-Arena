@@ -5,20 +5,15 @@ import {
   getPlayerQuizQuestions,
   calculateQuizScore,
 } from "./modules/Questions/question.services.js";
+import { checkConnectionDB } from "./DB/connectionDB.js";
 
-export const bootstrap = (app) => {
+export const bootstrap = async(app) => {
+  await checkConnectionDB();
   const httpServer = http.createServer(app);
   const io = new Server(httpServer);
-
-  
-    app.get("/", (req, res) => {
-      res.send("Quiz is up and running!");
-    });
   app.use("/api/quiz", questionRouter);
-
   io.on("connection", (socket) => {
     console.log("a user connected:", socket.id);
-
     socket.on("join-quiz", (quizCode) => {
       socket.join(quizCode);
       console.log(`${socket.id} joined room: ${quizCode}`);
@@ -41,7 +36,6 @@ export const bootstrap = (app) => {
           message: "Quiz not found or invalid answer payload.",
         });
       }
-
       socket.emit("quiz-score", result);
       socket.to(quizCode).emit("player-submitted", {
         playerID: socket.id,
