@@ -11,6 +11,7 @@ const optionSchema = new mongoose.Schema(
 
 const questionSchema = new mongoose.Schema(
   {
+    questionNumber: { type: Number, required: true, index: true },
     quizCode: { type: String, required: true, index: true },
     content: { type: String, required: true },
     options: {
@@ -26,4 +27,6 @@ const questionSchema = new mongoose.Schema(
   },
 );
 
+// Ensure question numbers are unique per quiz
+questionSchema.index({ quizCode: 1, questionNumber: 1 }, { unique: true });
 export const Question = mongoose.model("Question", questionSchema);

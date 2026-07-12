@@ -3,7 +3,15 @@ import { Question } from "../../DB/models/question.model.js";
 
 export const addQuestionToQuiz = async (quizCode, payload) => {
   const validated = questionSchema.parse(payload);
+  // compute next sequential questionNumber for this quizCode
+  const last = await Question.findOne({ quizCode })
+    .sort({ questionNumber: -1 })
+    .select("questionNumber")
+    .lean();
+  const nextQuestionNumber = last?.questionNumber ? last.questionNumber + 1 : 1;
+
   const question = new Question({
+    questionNumber: nextQuestionNumber,
     quizCode,
     content: validated.content.trim(),
     options: validated.options.map((option, index) => ({
@@ -23,7 +31,7 @@ export const getPlayerQuizQuestions = async (quizCode) => {
   return {
     quizCode,
     questions: questions.map((question) => ({
-      id: question._id.toString(),
+      id: question.questionNumber,
       content: question.content,
       options: question.options.map(({ id, text }) => ({ id, text })),
     })),
@@ -36,12 +44,15 @@ export const calculateQuizScore = async (quizCode, answers) => {
 
   const validatedAnswers = questionListSchema.parse(answers);
   const scoreDetails = questions.map((question) => {
-    const answer = validatedAnswers.find(
-      (item) => item.questionId === question._id.toString(),
-    );
+    const answer = validatedAnswers.find((item) => {
+      // support numeric questionNumber or string IDs
+      if (typeof item.questionId === "number")
+        return item.questionId === question.questionNumber;
+      return String(item.questionId) === String(question.questionNumber);
+    });
     const selectedOption = question.options[answer?.selectedOptionIndex];
     return {
-      questionId: question._id.toString(),
+      questionId: question.questionNumber,
       correct: Boolean(selectedOption?.isCorrect),
       selectedOptionId: selectedOption?.id || null,
       correctOptionIds: question.options

@@ -9,10 +9,10 @@ export const questionSchema = z.object({
   content: z.string().min(1, "Question content is required."),
   options: z.array(optionSchema).min(2, "At least 2 options are required."),
 });
-
+ 
 export const questionListSchema = z.array(
   z.object({
-    questionId: z.string().min(1),
+    questionId: z.union([z.string().min(1), z.number().int().positive()]),
     selectedOptionIndex: z.number().int().nonnegative(),
   }),
 );

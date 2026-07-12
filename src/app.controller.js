@@ -7,7 +7,7 @@ import {
 } from "./modules/Questions/question.services.js";
 import { checkConnectionDB } from "./DB/connectionDB.js";
 
-export const bootstrap = async(app) => {
+export const bootstrap = async (app) => {
   await checkConnectionDB();
   app.use("/api/quiz", questionRouter);
   const httpServer = http.createServer(app);
@@ -20,17 +20,27 @@ export const bootstrap = async(app) => {
       socket.emit("joined-quiz", { quizCode });
       socket.to(quizCode).emit("player-joined", { playerID: socket.id });
     });
+    socket.on("startQuiz", ({ quizCode }) => {
+      io.to(quizCode).emit("quizStarted", {});
+      console.log(`Quiz started for code: ${quizCode}`);
+    });
 
-    socket.on("request-quiz", ({ quizCode }) => {
-      const payload = getPlayerQuizQuestions(quizCode);
+    socket.on("request-quiz", async ({ quizCode }) => {
+      console.log(`Requesting quiz with code: ${quizCode}`);
+      const payload = await getPlayerQuizQuestions(quizCode);
+      socket.emit("quiz-requested", { quizCode, payload });
+      console.log("Quiz payload:", payload);
       if (!payload) {
+        console.log(`Quiz not found for code: ${quizCode}`);
         return socket.emit("quiz-error", { message: "Quiz not found." });
       }
+
+      console.log(`Successfully retrieved quiz for code: ${quizCode}`);
       socket.emit("quiz-data", payload);
     });
 
-    socket.on("submit-quiz", ({ quizCode, answers }) => {
-      const result = calculateQuizScore(quizCode, answers);
+    socket.on("submit-quiz", async ({ quizCode, answers }) => {
+      const result = await calculateQuizScore(quizCode, answers);
       if (!result) {
         return socket.emit("quiz-error", {
           message: "Quiz not found or invalid answer payload.",
