@@ -13,7 +13,12 @@ export const bootstrap = async (app) => {
   app.use("/api/quiz", questionRouter);
   app.use("/api/auth", authRouter);
   const httpServer = http.createServer(app);
-  const io = new Server(httpServer);
+  const io = new Server(httpServer, {
+     cors: {
+    origin: "https://live-quiz-arena.vercel.app",
+    methods: ["GET", "POST"],
+  },
+  });
   io.on("connection", (socket) => {
     console.log("a user connected:", socket.id);
     socket.on("join-quiz", (quizCode) => {
