@@ -1,6 +1,7 @@
 import http from "http";
 import { Server } from "socket.io";
 import questionRouter from "./modules/Questions/question.controllers.js";
+import authRouter from "./modules/Auth/auth.controllers.js";
 import {
   getPlayerQuizQuestions,
   calculateQuizScore,
@@ -10,6 +11,7 @@ import { checkConnectionDB } from "./DB/connectionDB.js";
 export const bootstrap = async (app) => {
   await checkConnectionDB();
   app.use("/api/quiz", questionRouter);
+  app.use("/api/auth", authRouter);
   const httpServer = http.createServer(app);
   const io = new Server(httpServer);
   io.on("connection", (socket) => {
@@ -40,18 +42,41 @@ export const bootstrap = async (app) => {
     });
 
     socket.on("submit-quiz", async ({ quizCode, answers }) => {
-      const result = await calculateQuizScore(quizCode, answers);
-      if (!result) {
-        return socket.emit("quiz-error", {
-          message: "Quiz not found or invalid answer payload.",
+      try {
+        const session = activeSessions.get(quizCode);
+        if (!session) {
+          socket.emit(
+            "error-message",
+            "This quiz session does not exist or has ended.",
+          );
+          return;
+        }
+
+        // Check 2: did THIS socket actually join this room/session?
+        const player = session.players.find((p) => p.socketId === socket.id);
+        if (!player) {
+          socket.emit(
+            "error-message",
+            "You have not joined this quiz. Please join first.",
+          );
+          return;
+        }
+        const result = await calculateQuizScore(quizCode, answers);
+        if (!result) {
+          return socket.emit("quiz-error", {
+            message: "Quiz not found or invalid answer payload.",
+          });
+        }
+        socket.emit("quiz-score", result);
+        socket.to(quizCode).emit("player-submitted", {
+          playerID: socket.id,
+          score: result.score,
+          total: result.total,
         });
+      } catch (err) {
+        console.error("Unexpected error in submit-answer:", err);
+        socket.emit("error-message", "Something unexpected went wrong.");
       }
-      socket.emit("quiz-score", result);
-      socket.to(quizCode).emit("player-submitted", {
-        playerID: socket.id,
-        score: result.score,
-        total: result.total,
-      });
     });
 
     socket.on("disconnect", () => {
@@ -63,4 +88,5 @@ export const bootstrap = async (app) => {
   httpServer.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });
+  return httpServer;
 };

@@ -3,26 +3,41 @@ import { Question } from "../../DB/models/question.model.js";
 
 export const addQuestionToQuiz = async (quizCode, payload) => {
   const validated = questionSchema.parse(payload);
-  // compute next sequential questionNumber for this quizCode
-  const last = await Question.findOne({ quizCode })
-    .sort({ questionNumber: -1 })
-    .select("questionNumber")
-    .lean();
-  const nextQuestionNumber = last?.questionNumber ? last.questionNumber + 1 : 1;
 
-  const question = new Question({
-    questionNumber: nextQuestionNumber,
-    quizCode,
-    content: validated.content.trim(),
-    options: validated.options.map((option, index) => ({
-      id: `${index}-${Math.random().toString(36).slice(2)}`,
-      text: option.text.trim(),
-      isCorrect: option.isCorrect,
-    })),
-  });
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const existingQuestions = await Question.find({ quizCode })
+      .sort({ questionNumber: -1 })
+      .select("questionNumber")
+      .lean();
 
-  await question.save();
-  return question.toObject();
+    const nextQuestionNumber = existingQuestions.length
+      ? Math.max(
+          ...existingQuestions.map((question) => question.questionNumber),
+        ) + 1
+      : 1;
+
+    const question = new Question({
+      questionNumber: nextQuestionNumber,
+      quizCode,
+      content: validated.content.trim(),
+      options: validated.options.map((option, index) => ({
+        id: `${index}-${Math.random().toString(36).slice(2)}`,
+        text: option.text.trim(),
+        isCorrect: option.isCorrect,
+      })),
+    });
+
+    try {
+      await question.save();
+      return question.toObject();
+    } catch (error) {
+      if (error?.code !== 11000) {
+        throw error;
+      }
+    }
+  }
+
+  throw new Error("Unable to assign a unique question number for this quiz.");
 };
 
 export const getPlayerQuizQuestions = async (quizCode) => {

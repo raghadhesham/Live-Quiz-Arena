@@ -1,0 +1,108 @@
+{
+  "info": {
+    "name": "Live Quiz Arena - Socket.IO Events",
+    "_postman_id": "live-quiz-arena-socketio",
+    "description": "Postman collection documenting Socket.IO events used by the Live Quiz Arena server. Use WebSocket tooling in Postman or a Socket.IO client to emit/listen to these events.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Connect (WebSocket)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "ws://localhost:3000/socket.io/",
+          "protocol": "ws",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["socket.io", ""]
+        },
+        "description": "Open a WebSocket connection to the server. Note: Socket.IO uses a custom protocol over WebSocket; prefer using a Socket.IO client."
+      },
+      "response": []
+    },
+    {
+      "name": "join-quiz (client -> server)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": { "raw": "ws://localhost:3000/socket.io/" },
+        "description": "Emit `join-quiz` with a quiz code to join a room. Example payload below is the event body to send via your Socket.IO client."
+      },
+      "event": [],
+      "response": [],
+      "description": "Payload example:\n{ \"quizCode\": \"ABCD123\" }"
+    },
+    {
+      "name": "joined-quiz (server -> client)",
+      "description": "Server acknowledgement after joining a room. Example payload:\n{ \"quizCode\": \"ABCD123\" }"
+    },
+    {
+      "name": "player-joined (server -> room)",
+      "description": "Broadcast to room when a player joins. Example payload:\n{ \"playerID\": \"<socket.id>\" }"
+    },
+    {
+      "name": "startQuiz (client -> server)",
+      "description": "Client requests to start quiz for a room. Payload example:\n{ \"quizCode\": \"ABCD123\" }"
+    },
+    {
+      "name": "quizStarted (server -> room)",
+      "description": "Server notifies room quiz started. Payload example: {}"
+    },
+    {
+      "name": "request-quiz (client -> server)",
+      "description": "Client requests quiz data for given code. Payload example:\n{ \"quizCode\": \"ABCD123\" }"
+    },
+    {
+      "name": "quiz-requested (server -> client)",
+      "description": "Server replies with a wrapper when a quiz is requested. Example payload:\n{ \"quizCode\": \"ABCD123\", \"payload\": { /* quiz object or null */ } }"
+    },
+    {
+      "name": "quiz-data (server -> client)",
+      "description": "Actual quiz data sent to player. Example payload:\n{
+  \"quizCode\": \"ABCD123\",
+  \"questions\": [
+    {
+      \"id\": 1,
+      \"content\": \"What is 2+2?\",
+      \"options\": [
+        { \"id\": \"0-abc\", \"text\": \"3\" },
+        { \"id\": \"1-def\", \"text\": \"4\" }
+      ]
+    }
+  ]
+}"
+    },
+    {
+      "name": "quiz-error (server -> client)",
+      "description": "Server error for quiz operations. Example payload:\n{ \"message\": \"Quiz not found.\" }"
+    },
+    {
+      "name": "submit-quiz (client -> server)",
+      "description": "Client submits answers. Payload example:\n{
+  \"quizCode\": \"ABCD123\",
+  \"answers\": [
+    { \"questionId\": 1, \"selectedOptionIndex\": 1 }
+  ]
+}"
+    },
+    {
+      "name": "quiz-score (server -> client)",
+      "description": "Server returns score result. Example payload:\n{
+  \"quizCode\": \"ABCD123\",
+  \"score\": 1,
+  \"total\": 1,
+  \"details\": [ { \"questionId\": 1, \"correct\": true, \"selectedOptionId\": \"1-def\", \"correctOptionIds\": [\"1-def\"] } ]
+}"
+    },
+    {
+      "name": "player-submitted (server -> room)",
+      "description": "Broadcast when a player submits answers. Example payload:\n{ \"playerID\": \"<socket.id>\", \"score\": 1, \"total\": 1 }"
+    },
+    {
+      "name": "disconnect (socket event)",
+      "description": "Fires when a socket disconnects. No payload." 
+    }
+  ]
+}
