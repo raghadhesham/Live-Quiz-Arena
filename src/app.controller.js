@@ -15,8 +15,8 @@ export const bootstrap = async (app) => {
   const httpServer = http.createServer(app);
   const io = new Server(httpServer, {
      cors: {
-    origin: "https://live-quiz-arena.vercel.app",
-    methods: ["GET", "POST"],
+    origin: "*",
+    methods: ["GET", "POST"], 
   },
   });
   io.on("connection", (socket) => {
