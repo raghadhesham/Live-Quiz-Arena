@@ -1,23 +1,31 @@
 import dotenv from "dotenv";
+import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 
-const envFile = process.env.NODE_ENV ? `.env.${process.env.NODE_ENV}` : ".env";
+const currentFilePath = fileURLToPath(import.meta.url);
+const currentDir = path.dirname(currentFilePath);
+const projectRoot = path.resolve(currentDir, "../../..");
+const searchRoots = [projectRoot, process.cwd()];
+const envFiles = process.env.NODE_ENV
+  ? [`.env.${process.env.NODE_ENV}`, ".env", ".env.development", ".env.local"]
+  : [".env", ".env.development", ".env.local"];
 
-dotenv.config({
-  path: path.resolve(process.cwd(), envFile),
-});
+for (const root of searchRoots) {
+  for (const envFile of envFiles) {
+    const resolvedPath = path.resolve(root, envFile);
 
-if (!process.env.DB_URI) {
-  dotenv.config({
-    path: path.resolve(process.cwd(), ".env.development"),
-  });
+    if (fs.existsSync(resolvedPath)) {
+      dotenv.config({ path: resolvedPath, override: true });
+    }
+  }
 }
 
-export const config = { 
+export const config = {
   env: process.env.NODE_ENV,
   db: {
     name: process.env.DB_NAME,
-    uri: process.env.DB_URI, 
+    uri: process.env.DB_URI,
   },
   port: {
     port: process.env.DB_PORT,
