@@ -10,4 +10,5 @@ app.use(express.static("public"));
 app.get("/", (req, res) => {
   res.send("Quiz is up and running!");
 });
-export default await bootstrap(app);
+await bootstrap(app);
+export default app;

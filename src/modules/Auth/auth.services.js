@@ -1,3 +1,15 @@
+import { hash, compare } from "bcrypt";
+import { roleEnum } from "../../common/utils/enums/user.enum.js";
+import { findOne } from "../../DB/repository/database.repository.js";
+import {
+  createTokenPayload,
+  generateAccessToken,
+  generateRefreshToken,
+} from "../../common/utils/auth/token.js";
+import { userModel } from "../../DB/models/user.model.js";
+import { eventEmitter } from "../../common/utils/email/email.event.js";
+import { emailEnum } from "../../common/utils/enums/email.enum.js";
+import {successResponse} from "../../common/utils/response/success.response.js";
 export const signUp = async (req, res) => {
   let {
     fullName,
@@ -25,10 +37,10 @@ export const signUp = async (req, res) => {
   if (emailExists) {
     throw new Error("conflict");
   }
-  if (role == "admin") {
-    role = roleEnum.admin;
+  if (role == "host") {
+    role = roleEnum.host;
   } else {
-    role = roleEnum.user;
+    role = roleEnum.candidate;
   }
   const user = await userModel.create({
     fullName,
@@ -37,7 +49,6 @@ export const signUp = async (req, res) => {
     gender,
     age,
     phone,
-    profilePic: req.files.profilePic[0].path || "default.png",
     album: paths.length > 0 ? paths : ["default.png"],
     bio,
     DOB,
@@ -59,7 +70,7 @@ export const login = async (req, res) => {
     });
     console.log(user);
     if (!user) {
-      res.status(401).json({ message: "Wrong Credentials" });      
+      res.status(401).json({ message: "Wrong Credentials" });
       throw new Error("Wrong Credentials");
     }
     if (await getRedisValue(banKey)) {
