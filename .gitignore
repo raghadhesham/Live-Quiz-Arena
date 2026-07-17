@@ -1,2 +1,4 @@
+.env
 .env.development
+.env.local
 node_modules/

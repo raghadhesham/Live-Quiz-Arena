@@ -7,16 +7,30 @@ const currentFilePath = fileURLToPath(import.meta.url);
 const currentDir = path.dirname(currentFilePath);
 const projectRoot = path.resolve(currentDir, "../../..");
 const searchRoots = [projectRoot, process.cwd()];
-const envFiles = process.env.NODE_ENV
-  ? [`.env.${process.env.NODE_ENV}`, ".env", ".env.development", ".env.local"]
-  : [".env", ".env.development", ".env.local"];
+const envFiles = [".env", ".env.local"];
+
+if (process.env.NODE_ENV) {
+  envFiles.push(`.env.${process.env.NODE_ENV}`);
+}
+
+if (!process.env.NODE_ENV || process.env.NODE_ENV === "development") {
+  envFiles.push(".env.development");
+}
 
 for (const root of searchRoots) {
   for (const envFile of envFiles) {
     const resolvedPath = path.resolve(root, envFile);
 
     if (fs.existsSync(resolvedPath)) {
-      dotenv.config({ path: resolvedPath, override: true });
+      const parsedEnv = dotenv.config({ path: resolvedPath, quiet: true });
+
+      if (parsedEnv.parsed) {
+        for (const [key, value] of Object.entries(parsedEnv.parsed)) {
+          if (!process.env[key] || process.env[key] === "") {
+            process.env[key] = value;
+          }
+        }
+      }
     }
   }
 }
