@@ -2,7 +2,7 @@
 // so ? store data you access frequently in Remote Dictionary Server (Redis DB => IN-MEMORY ,KEY VALUE NO SQL DB)
 
 import { createClient } from "redis";
-import { config } from "../../config/configServices.js";
+import { config } from "../config/configServices.js";
 // import { REDIS_URL } from "../config/configServices.js";
 export const redisClient = createClient({
   url: config.redis.redis_url,

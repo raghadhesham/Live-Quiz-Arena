@@ -4,10 +4,11 @@ import {
   getPlayerQuizQuestions,
 } from "./question.services.js";
 import { questionSchema } from "./question.validation.js";
+import { authenticate } from "../../common/middleware/authentication.js" 
 
 const router = express.Router();
 
-router.post("/:quizCode/questions", async (req, res) => {
+router.post("/:quizCode/questions", authenticate,async (req, res) => {
   try {
     questionSchema.parse(req.body);
     const { quizCode } = req.params;
@@ -20,7 +21,7 @@ router.post("/:quizCode/questions", async (req, res) => {
   }
 });
 
-router.get("/:quizCode/questions", async (req, res) => {
+router.get("/:quizCode/questions",authenticate, async (req, res) => {
   const { quizCode } = req.params;
   const quizPayload = await getPlayerQuizQuestions(quizCode);
 

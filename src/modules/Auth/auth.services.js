@@ -9,7 +9,8 @@ import {
 import { userModel } from "../../DB/models/user.model.js";
 import { eventEmitter } from "../../common/utils/email/email.event.js";
 import { emailEnum } from "../../common/utils/enums/email.enum.js";
-import {successResponse} from "../../common/utils/response/success.response.js";
+import { successResponse } from "../../common/utils/response/success.response.js";
+import {deleteRedisValue, getRedisValue, setRedisValue} from "../../DB/redis/redis.services.js"
 export const signUp = async (req, res) => {
   let {
     fullName,
@@ -80,6 +81,8 @@ export const login = async (req, res) => {
     }
     if (user) {
       const isMatched = await compare(password, user.password);
+      console.log(user.password); 
+      
       if (isMatched) {
         const payload = createTokenPayload(user);
         const refresh_token = generateRefreshToken(payload);

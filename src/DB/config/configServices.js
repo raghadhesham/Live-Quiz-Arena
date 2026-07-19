@@ -52,4 +52,7 @@ export const config = {
     audience: process.env.AUDIENCE,
     prefix: process.env.PREFIX,
   },
+  redis: {
+    redis_url:process.env.REDIS_URL
+  }
 };

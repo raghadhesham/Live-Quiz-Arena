@@ -1,12 +1,11 @@
-import { create, findById, findOne } from "../../DB/database.repository.js";
+import { userModel } from "../../DB/models/user.model.js";
 import { getRedisValue } from "../../DB/redis/redis.services.js";
-import { revokeTokenModel } from "../../models/revokeToken.model.js";
-import { userModel } from "../../models/user.model.js";
+import { findById } from "../../DB/repository/database.repository.js";
 import {
   extractTokenFromHeader,
   revokeToken,
   verifyAccessToken,
-} from "../utils/auth/token.js";
+} from "../utils/auth/token.js"; 
 
 export const authenticate = async (req, res, next) => {
   try {
