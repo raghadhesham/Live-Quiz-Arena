@@ -21,7 +21,7 @@ export const addQuestionToQuiz = async (quizCode, payload) => {
       quizCode,
       content: validated.content.trim(),
       options: validated.options.map((option, index) => ({
-        id: `${index}-${Math.random().toString(36).slice(2)}`,
+        id: `${index}`,
         text: option.text.trim(),
         isCorrect: option.isCorrect,
       })),

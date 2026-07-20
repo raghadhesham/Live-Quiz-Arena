@@ -73,3 +73,4 @@ export const baseRevokeToken = async (userId) => {
 export const revokeToken = async(userId, jti) => {
   return `${userId}::${jti}`;
 };
+ 
