@@ -30,6 +30,7 @@ export const bootstrap = async (app) => {
 
   io.on("connection", (socket) => {
     console.log("a user connected:", socket.id);
+    console.log(socket.user);
 
     const requireSocketRoles =
       (...allowedRoles) =>
@@ -63,18 +64,17 @@ export const bootstrap = async (app) => {
       requireSocketRoles(
         roleEnum.candidate,
         roleEnum.host,
-        async (quizCode) => {
-          joinSession(quizCode);
-          console.log(`${socket.id} joined room: ${quizCode}`);
-          socket.emit("joined-quiz", { quizCode });
-          socket.to(quizCode).emit("player-joined", { playerID: socket.id });
-        },
-      ),
+      )(async (quizCode) => {
+        joinSession(quizCode);
+        console.log(`${socket.id} joined room: ${quizCode}`);
+        socket.emit("joined-quiz", { quizCode });
+        socket.to(quizCode).emit("player-joined", { playerID: socket.id });
+      }),
     );
 
     socket.on(
       "startQuiz",
-      requireSocketRoles(roleEnum.host, async ({ quizCode }) => {
+      requireSocketRoles(roleEnum.host)(async ({ quizCode }) => {
         io.to(quizCode).emit("quizStarted", {});
         console.log(`Quiz started for code: ${quizCode}`);
       }),
@@ -82,7 +82,7 @@ export const bootstrap = async (app) => {
 
     socket.on(
       "request-quiz",
-      requireSocketRoles(roleEnum.candidate, async ({ quizCode }) => {
+      requireSocketRoles(roleEnum.candidate)(async ({ quizCode }) => {
         console.log(`Requesting quiz with code: ${quizCode}`);
         const payload = await getPlayerQuizQuestions(quizCode);
         if (!payload) {
@@ -98,7 +98,7 @@ export const bootstrap = async (app) => {
 
     socket.on(
       "submit-quiz",
-      requireSocketRoles(roleEnum.candidate, async ({ quizCode, answers }) => {
+      requireSocketRoles(roleEnum.candidate)(async ({ quizCode, answers }) => {
         try {
           const session = activeSessions.get(quizCode);
           if (!session) {
