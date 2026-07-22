@@ -12,7 +12,7 @@ router.post("/:quizCode/questions", authenticate,async (req, res) => {
   try {
     questionSchema.parse(req.body);
     const { quizCode } = req.params;
-    const question = await addQuestionToQuiz(quizCode, req.body);
+    const question = await addQuestionToQuiz(quizCode, req.body,req.user.id);
     return res.status(201).json({ quizCode, question });
   } catch (error) {
     return res

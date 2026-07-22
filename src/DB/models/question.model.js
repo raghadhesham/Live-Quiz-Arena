@@ -19,6 +19,7 @@ const questionSchema = new mongoose.Schema(
       required: true,
       validate: [(val) => val.length >= 2, "At least 2 options are required."],
     },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   },
   {
     timestamps: true,

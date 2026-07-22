@@ -47,11 +47,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: [GenderEnum.female, GenderEnum.male],
     },
-    role: {
-      type: String,
-      enum: [roleEnum.host, roleEnum.candidate],
-      default: roleEnum.candidate,
-    },
     confirmEmail: {
       type: Date,
     },

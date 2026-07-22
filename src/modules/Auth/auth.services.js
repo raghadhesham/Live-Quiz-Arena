@@ -10,7 +10,43 @@ import { userModel } from "../../DB/models/user.model.js";
 import { eventEmitter } from "../../common/utils/email/email.event.js";
 import { emailEnum } from "../../common/utils/enums/email.enum.js";
 import { successResponse } from "../../common/utils/response/success.response.js";
-import {deleteRedisValue, getRedisValue, setRedisValue} from "../../DB/redis/redis.services.js"
+import {
+  deleteRedisValue,
+  getRedisValue,
+  setRedisValue,
+} from "../../DB/redis/redis.services.js";
+const sendOTP = async (email, subject) => {
+  const OTP = await generateOTP();
+  await sendEmail({
+    from: config.email.email,
+    to: email,
+    subject: "Hi! this is nodemailer working",
+    html: emailTemplate(OTP),
+  });
+  setRedisValue({
+    key: otp_key(email, subject),
+    value: await hash(OTP.toString(), 10),
+    ttl: 15 * 60,
+  });
+};
+const verifyOTP = async (email, gotOTP, subject) => {
+  try {
+    if (!gotOTP) {
+      throw new Error("invalid credentials");
+    }
+    console.log(otp_key(email, subject));
+    const OTPExists = await getRedisValue(otp_key(email, subject));
+    if (!OTPExists) {
+      throw new Error("OTP not found or expired");
+    }
+    if (!(await compare(gotOTP, OTPExists))) {
+      throw new Error("Invalid OTP (does not match)");
+    }
+  } catch (error) {
+    console.log(error, error.stack, error.message);
+  }
+};
+
 export const signUp = async (req, res) => {
   let {
     fullName,
@@ -19,12 +55,12 @@ export const signUp = async (req, res) => {
     cpassword,
     gender,
     age,
-    phone,
+    phone, 
     bio,
     DOB,
     role,
   } = req.body;
-  const hashed = await hash(password, 12);
+  const hashed = await hash(password, 12); 
   let paths = [];
   // if (req.files.album) {
   //   for (let i = 0; i < req.files.album.length; i++) {
@@ -65,7 +101,7 @@ export const login = async (req, res) => {
     let { email, password } = req.body;
     let counterKey = `user::${email}`;
     let banKey = `user::banned::${email}`;
-    let user = await userModel.findOne({
+    let user = await findOne({
       model: userModel,
       filter: { email },
     });
@@ -81,8 +117,8 @@ export const login = async (req, res) => {
     }
     if (user) {
       const isMatched = await compare(password, user.password);
-      console.log(user.password); 
-      
+      console.log(user.password);
+
       if (isMatched) {
         const payload = createTokenPayload(user);
         const refresh_token = generateRefreshToken(payload);
@@ -108,13 +144,26 @@ export const login = async (req, res) => {
             data: {
               access_token,
               refresh_token,
+              user: {
+                id: user._id,
+                email: user.email,
+                role: user.role,
+              },
             },
           });
         }
         return successResponse({
           res,
           message: "welcome to our app",
-          data: { access_token, refresh_token },
+          data: {
+            access_token,
+            refresh_token,
+            user: {
+              id: user._id,
+              email: user.email,
+              role: user.role,
+            },
+          },
         });
       } else {
         res.status(400).json({ message: "wrong credentials" });

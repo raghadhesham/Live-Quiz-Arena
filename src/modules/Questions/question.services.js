@@ -1,7 +1,7 @@
 import { questionSchema, questionListSchema } from "./question.validation.js";
 import { Question } from "../../DB/models/question.model.js";
 
-export const addQuestionToQuiz = async (quizCode, payload) => {
+export const addQuestionToQuiz = async (quizCode, payload, userId) => {
   const validated = questionSchema.parse(payload);
 
   for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -25,6 +25,7 @@ export const addQuestionToQuiz = async (quizCode, payload) => {
         text: option.text.trim(),
         isCorrect: option.isCorrect,
       })),
+      userId, // <-- new: whoever created this question
     });
 
     try {

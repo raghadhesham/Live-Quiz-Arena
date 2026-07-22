@@ -43,6 +43,19 @@ export const bootstrap = async (app) => {
         }
         return handler(payload);
       };
+    const requireJoinedSession = (handler) => async (payload) => {
+      const { quizCode } = payload;
+      const session = activeSessions.get(quizCode);
+      const player = session?.players.find((p) => p.socketId === socket.id);
+
+      if (!player) {
+        return socket.emit("quiz-error", {
+          message: "You have not joined this quiz. Please join first.",
+        });
+      }
+
+      return handler(payload, player); // pass player along if handler needs it
+    };
 
     const joinSession = (quizCode) => {
       socket.join(quizCode);
@@ -80,61 +93,44 @@ export const bootstrap = async (app) => {
       }),
     );
 
-    socket.on(
-      "request-quiz",
-      requireSocketRoles(roleEnum.candidate)(async ({ quizCode }) => {
-        console.log(`Requesting quiz with code: ${quizCode}`);
-        const payload = await getPlayerQuizQuestions(quizCode);
-        if (!payload) {
-          console.log(`Quiz not found for code: ${quizCode}`);
-          return socket.emit("quiz-error", { message: "Quiz not found." });
-        }
+  socket.on(
+  "request-quiz",
+  requireSocketRoles(roleEnum.candidate)(
+    requireJoinedSession(async ({ quizCode }) => {
+      console.log(`Requesting quiz with code: ${quizCode}`);
+      const payload = await getPlayerQuizQuestions(quizCode);
+      if (!payload) {
+        return socket.emit("quiz-error", { message: "Quiz not found." });
+      }
+      socket.emit("quiz-data", payload);
+    }),
+  ),
+);
 
-        socket.emit("quiz-requested", { quizCode, payload });
-        console.log(`Successfully retrieved quiz for code: ${quizCode}`);
-        socket.emit("quiz-data", payload);
-      }),
-    );
-
-    socket.on(
-      "submit-quiz",
-      requireSocketRoles(roleEnum.candidate)(async ({ quizCode, answers }) => {
-        try {
-          const session = activeSessions.get(quizCode);
-          if (!session) {
-            socket.emit(
-              "error-message",
-              "This quiz session does not exist or has ended.",
-            );
-            return;
-          }
-
-          const player = session.players.find((p) => p.socketId === socket.id);
-          if (!player) {
-            socket.emit(
-              "error-message",
-              "You have not joined this quiz. Please join first.",
-            );
-            return;
-          }
-          const result = await calculateQuizScore(quizCode, answers);
-          if (!result) {
-            return socket.emit("quiz-error", {
-              message: "Quiz not found or invalid answer payload.",
-            });
-          }
-          socket.emit("quiz-score", result);
-          socket.to(quizCode).emit("player-submitted", {
-            playerID: socket.id,
-            score: result.score,
-            total: result.total,
+socket.on(
+  "submit-quiz",
+  requireSocketRoles(roleEnum.candidate)(
+    requireJoinedSession(async ({ quizCode, answers }, player) => {
+      try {
+        const result = await calculateQuizScore(quizCode, answers);
+        if (!result) {
+          return socket.emit("quiz-error", {
+            message: "Quiz not found or invalid answer payload.",
           });
-        } catch (err) {
-          console.error("Unexpected error in submit-answer:", err);
-          socket.emit("error-message", "Something unexpected went wrong.");
         }
-      }),
-    );
+        socket.emit("quiz-score", result);
+        socket.to(quizCode).emit("player-submitted", {
+          playerID: socket.id,
+          score: result.score,
+          total: result.total,
+        });
+      } catch (err) {
+        console.error("Unexpected error in submit-answer:", err);
+        socket.emit("error-message", "Something unexpected went wrong.");
+      }
+    }),
+  ),
+);
 
     socket.on("disconnect", () => {
       console.log("User disconnected:", socket.id);
