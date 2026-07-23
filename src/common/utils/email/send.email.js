@@ -5,7 +5,7 @@ export const sendEmail = async ({
   from,
   to,
   subject,
-  html,
+  html, 
   attachments = [],
 }) => {
   const transporter = createTransport({

@@ -59,7 +59,6 @@ export const signUp = async (req, res) => {
     phone, 
     bio,
     DOB,
-    role,
   } = req.body;
   const hashed = await hash(password, 12); 
   let paths = [];
@@ -75,11 +74,7 @@ export const signUp = async (req, res) => {
   if (emailExists) {
     throw new Error("conflict");
   }
-  if (role == "host") {
-    role = roleEnum.host;
-  } else { 
-    role = roleEnum.candidate;
-  }
+
   const user = await userModel.create({
     fullName,
     email,
@@ -90,7 +85,7 @@ export const signUp = async (req, res) => {
     album: paths.length > 0 ? paths : ["default.png"],
     bio,
     DOB,
-    role,
+
   });
   eventEmitter.emit(emailEnum.confirmEmail, async () => {
     sendOTP(email, "Signup");
@@ -148,7 +143,6 @@ export const login = async (req, res) => {
               user: {
                 id: user._id,
                 email: user.email,
-                role: user.role,
               },
             },
           });
@@ -162,7 +156,6 @@ export const login = async (req, res) => {
             user: {
               id: user._id,
               email: user.email,
-              role: user.role,
             },
           },
         });
