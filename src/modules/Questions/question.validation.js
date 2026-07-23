@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const optionSchema = z.object({
   text: z.string().min(1, "Option text is required."),
-  isCorrect: z.boolean(),
+  isCorrect: z.boolean(), 
 });
 
 export const questionSchema = z.object({
@@ -15,4 +15,5 @@ export const questionListSchema = z.array(
     questionId: z.union([z.string().min(1), z.number().int().positive()]),
     selectedOptionIndex: z.number().int().nonnegative(),
   }),
-);
+); 
+ 

@@ -10,6 +10,7 @@ import { checkConnectionDB } from "./DB/connectionDB.js";
 import { authenticateSocket } from "./common/middleware/authentication.js";
 import { roleEnum } from "./common/utils/enums/user.enum.js";
 import { connectRedis } from "./DB/redis/redis.connection.js";
+import { Question } from "./DB/models/question.model.js";
 
 const activeSessions = new Map();
 
@@ -43,6 +44,13 @@ export const bootstrap = async (app) => {
         }
         return handler(payload);
       };
+
+    const isQuizHost = async (quizCode, userId) => {
+      const question = await Question.findOne({ quizCode }).lean();
+      if (!question) return false;
+      return String(question.userId) === String(userId);
+    };
+
     const requireJoinedSession = (handler) => async (payload) => {
       const { quizCode } = payload;
       const session = activeSessions.get(quizCode);
@@ -53,8 +61,7 @@ export const bootstrap = async (app) => {
           message: "You have not joined this quiz. Please join first.",
         });
       }
-
-      return handler(payload, player); // pass player along if handler needs it
+      return handler(payload, player);
     };
 
     const joinSession = (quizCode) => {
@@ -72,65 +79,65 @@ export const bootstrap = async (app) => {
       }
     };
 
-    socket.on(
-      "join-quiz",
-      requireSocketRoles(
-        roleEnum.candidate,
-        roleEnum.host,
-      )(async (quizCode) => {
-        joinSession(quizCode);
-        console.log(`${socket.id} joined room: ${quizCode}`);
-        socket.emit("joined-quiz", { quizCode });
-        socket.to(quizCode).emit("player-joined", { playerID: socket.id });
-      }),
-    );
+    socket.on("join-quiz", async ({ quizCode }) => {
+      joinSession(quizCode);
+      console.log(`${socket.id} joined room: ${quizCode}`);
+      socket.emit("joined-quiz", { quizCode });
+      socket.to(quizCode).emit("player-joined", { playerID: socket.id });
+    });
 
-    socket.on(
-      "startQuiz",
-      requireSocketRoles(roleEnum.host)(async ({ quizCode }) => {
-        io.to(quizCode).emit("quizStarted", {});
-        console.log(`Quiz started for code: ${quizCode}`);
-      }),
-    );
-
-  socket.on(
-  "request-quiz",
-  requireSocketRoles(roleEnum.candidate)(
-    requireJoinedSession(async ({ quizCode }) => {
-      console.log(`Requesting quiz with code: ${quizCode}`);
-      const payload = await getPlayerQuizQuestions(quizCode);
-      if (!payload) {
-        return socket.emit("quiz-error", { message: "Quiz not found." });
+    socket.on("startQuiz", async ({ quizCode }) => {
+      const isHost = await isQuizHost(quizCode, socket.userId);
+      if (!isHost) {
+        return socket.emit("quiz-error", {
+          message: "Only the host can start this quiz.",
+        });
       }
-      socket.emit("quiz-data", payload);
-    }),
-  ),
-);
+      io.to(quizCode).emit("quizStarted", {});
+      console.log(`Quiz started for code: ${quizCode}`);
+    });
 
-socket.on(
-  "submit-quiz",
-  requireSocketRoles(roleEnum.candidate)(
-    requireJoinedSession(async ({ quizCode, answers }, player) => {
-      try {
-        const result = await calculateQuizScore(quizCode, answers);
-        if (!result) {
-          return socket.emit("quiz-error", {
-            message: "Quiz not found or invalid answer payload.",
+    socket.on(
+      "request-quiz",
+      requireJoinedSession(async ({ quizCode }) => {
+        console.log(`Requesting quiz with code: ${quizCode}`);
+        const payload = await getPlayerQuizQuestions(quizCode);
+        if (!payload) {
+          return socket.emit("quiz-error", { message: "Quiz not found." });
+        }
+        socket.emit("quiz-data", payload);
+      }),
+    );
+
+    socket.on(
+      "submit-quiz",
+      requireJoinedSession(async ({ quizCode, answers }, player) => {
+        try {
+          console.log(
+            "room members:",
+            io.sockets.adapter.rooms.get(quizCode)?.size,
+            [...(io.sockets.adapter.rooms.get(quizCode) ?? [])],
+          );
+          const result = await calculateQuizScore(quizCode, answers);
+          if (!result) {
+            return socket.emit("quiz-error", {
+              message: "Quiz not found or invalid answer payload.",
+            });
+          }
+          socket.emit("quiz-score", result);
+          socket.to(quizCode).emit("player-submitted", {
+            playerID: socket.id,
+            score: result.score,
+            total: result.total,
+          });
+        } catch (err) {
+          console.error("Unexpected error in submit-answer:", err);
+          socket.emit("quiz-error", {
+            message: "Something unexpected went wrong.",
           });
         }
-        socket.emit("quiz-score", result);
-        socket.to(quizCode).emit("player-submitted", {
-          playerID: socket.id,
-          score: result.score,
-          total: result.total,
-        });
-      } catch (err) {
-        console.error("Unexpected error in submit-answer:", err);
-        socket.emit("error-message", "Something unexpected went wrong.");
-      }
-    }),
-  ),
-);
+      }),
+    );
 
     socket.on("disconnect", () => {
       console.log("User disconnected:", socket.id);

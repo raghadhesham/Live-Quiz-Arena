@@ -15,11 +15,12 @@ import {
   getRedisValue,
   setRedisValue,
 } from "../../DB/redis/redis.services.js";
+import { generateOTP } from "../../common/utils/email/send.email.js";
 const sendOTP = async (email, subject) => {
   const OTP = await generateOTP();
   await sendEmail({
     from: config.email.email,
-    to: email,
+    to: email, 
     subject: "Hi! this is nodemailer working",
     html: emailTemplate(OTP),
   });
@@ -69,14 +70,14 @@ export const signUp = async (req, res) => {
   // }
   const emailExists = await findOne({
     model: userModel,
-    filter: { email },
+    filter: { email }, 
   });
   if (emailExists) {
     throw new Error("conflict");
   }
   if (role == "host") {
     role = roleEnum.host;
-  } else {
+  } else { 
     role = roleEnum.candidate;
   }
   const user = await userModel.create({

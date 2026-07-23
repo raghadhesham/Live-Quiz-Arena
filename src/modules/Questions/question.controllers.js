@@ -6,13 +6,14 @@ import {
 import { questionSchema } from "./question.validation.js";
 import { authenticate } from "../../common/middleware/authentication.js" 
 
-const router = express.Router();
-
+const router = express.Router(); 
 router.post("/:quizCode/questions", authenticate,async (req, res) => {
   try {
     questionSchema.parse(req.body);
     const { quizCode } = req.params;
-    const question = await addQuestionToQuiz(quizCode, req.body,req.user.id);
+    console.log(req.user);
+    
+    const question = await addQuestionToQuiz(quizCode, req.body,req.user.userId);
     return res.status(201).json({ quizCode, question });
   } catch (error) {
     return res

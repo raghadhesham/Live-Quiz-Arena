@@ -1,5 +1,5 @@
 import { createTransport } from "nodemailer";
-import { config } from "../../../config/configServices.js";
+import { config } from "../../../DB/config/configServices.js";
 
 export const sendEmail = async ({
   from,
@@ -12,8 +12,8 @@ export const sendEmail = async ({
     service: "gmail",
     port: 587,
     secure: false,
-    auth: {
-      user: config.email.email,
+    auth: { 
+      user: config.email.email, 
       pass: config.email.password, 
     }, 
   });
