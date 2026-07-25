@@ -22,7 +22,7 @@ export const bootstrap = async (app) => {
   const httpServer = http.createServer(app);
   const io = new Server(httpServer, {
     cors: {
-      origin: "*",
+      origin: "http://localhost:3000/",
       methods: ["GET", "POST"],
     },
   });
