@@ -37,7 +37,7 @@ export const joinSession = (socket, quizCode) => {
 
 export const isQuizHost = async (quizCode, userId) => {
   const question = await Question.findOne({ quizCode }).lean();
-
+ 
   if (!question) return false;
 
   return String(question.userId) === String(userId);
