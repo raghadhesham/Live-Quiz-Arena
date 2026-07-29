@@ -1,5 +1,3 @@
-import http from "http";
-import { Server } from "socket.io";
 import questionRouter from "./modules/Questions/question.controllers.js";
 import authRouter from "./modules/Auth/auth.controllers.js";
 import {
@@ -11,6 +9,8 @@ import { authenticateSocket } from "./common/middleware/authentication.js";
 import { roleEnum } from "./common/utils/enums/user.enum.js";
 import { connectRedis } from "./DB/redis/redis.connection.js";
 import { Question } from "./DB/models/question.model.js";
+import { httpServer, io } from "./modules/Socket/socket.server.js";
+import { requireJoinedSession } from "./modules/Socket/socket.utils.js";
 
 const activeSessions = new Map();
 
@@ -19,51 +19,10 @@ export const bootstrap = async (app) => {
   await connectRedis();
   app.use("/api/quiz", questionRouter);
   app.use("/api/auth", authRouter);
-  const httpServer = http.createServer(app);
-  const io = new Server(httpServer, {
-    cors: {
-      origin: ["http://localhost:3000/", "http://localhost:4200/"],
-      methods: ["GET", "POST"],
-    },
-  });
-
   io.use(authenticateSocket);
-
   io.on("connection", (socket) => {
     console.log("a user connected:", socket.id);
     console.log(socket.user);
-
-    const requireSocketRoles =
-      (...allowedRoles) =>
-      (handler) =>
-      async (payload) => {
-        if (!socket.role || !allowedRoles.includes(socket.role)) {
-          return socket.emit("quiz-error", {
-            message: "Forbidden: insufficient permissions.",
-          });
-        }
-        return handler(payload);
-      };
-
-    const isQuizHost = async (quizCode, userId) => {
-      const question = await Question.findOne({ quizCode }).lean();
-      if (!question) return false;
-      return String(question.userId) === String(userId);
-    };
-
-    const requireJoinedSession = (handler) => async (payload) => {
-      const { quizCode } = payload;
-      const session = activeSessions.get(quizCode);
-      const player = session?.players.find((p) => p.socketId === socket.id);
-
-      if (!player) {
-        return socket.emit("quiz-error", {
-          message: "You have not joined this quiz. Please join first.",
-        });
-      }
-      return handler(payload, player);
-    };
-
     const joinSession = (quizCode) => {
       socket.join(quizCode);
       if (!activeSessions.has(quizCode)) {
