@@ -13,6 +13,7 @@ import { successResponse } from "../../common/utils/response/success.response.js
 import {
   deleteRedisValue,
   getRedisValue,
+  incrementRedisValue,
   setRedisValue,
 } from "../../DB/redis/redis.services.js";
 import { generateOTP } from "../../common/utils/email/send.email.js";
@@ -20,7 +21,7 @@ const sendOTP = async (email, subject) => {
   const OTP = await generateOTP();
   await sendEmail({
     from: config.email.email,
-    to: email, 
+    to: email,
     subject: "Hi! this is nodemailer working",
     html: emailTemplate(OTP),
   });
@@ -49,18 +50,9 @@ const verifyOTP = async (email, gotOTP, subject) => {
 };
 
 export const signUp = async (req, res) => {
-  let {
-    fullName,
-    email,
-    password,
-    cpassword,
-    gender,
-    age,
-    phone, 
-    bio,
-    DOB,
-  } = req.body;
-  const hashed = await hash(password, 12); 
+  let { fullName, email, password, cpassword, gender, age, phone, bio, DOB } =
+    req.body;
+  const hashed = await hash(password, 12);
   let paths = [];
   // if (req.files.album) {
   //   for (let i = 0; i < req.files.album.length; i++) {
@@ -69,7 +61,7 @@ export const signUp = async (req, res) => {
   // }
   const emailExists = await findOne({
     model: userModel,
-    filter: { email }, 
+    filter: { email },
   });
   if (emailExists) {
     throw new Error("conflict");
@@ -85,7 +77,6 @@ export const signUp = async (req, res) => {
     album: paths.length > 0 ? paths : ["default.png"],
     bio,
     DOB,
-
   });
   eventEmitter.emit(emailEnum.confirmEmail, async () => {
     sendOTP(email, "Signup");
