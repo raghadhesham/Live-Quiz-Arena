@@ -35,7 +35,9 @@ export const registerQuizEvents = (io, socket) => {
   socket.on(
     "request-quiz",
     requireJoinedSession(socket)(async ({ quizCode }) => {
-
+      console.log(`user ${socket.id} joined`);
+      console.log(`Requesting quiz${quizCode}`);
+      
       const payload = await getPlayerQuizQuestions(quizCode);
 
       socket.emit("quiz-data", payload);

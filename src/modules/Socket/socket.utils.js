@@ -3,6 +3,9 @@ import { activeSessions } from "./socket.sessions.js";
 
 export const requireJoinedSession =
   (socket) => (handler) => async (payload) => {
+    console.log("requireJoinedSession called");
+    console.log(payload);
+    
     const session = activeSessions.get(payload.quizCode);
 
     const player = session?.players.find((p) => p.socketId === socket.id);

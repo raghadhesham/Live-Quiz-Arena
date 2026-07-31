@@ -10,9 +10,12 @@ import { roleEnum } from "./common/utils/enums/user.enum.js";
 import { connectRedis } from "./DB/redis/redis.connection.js";
 import { Question } from "./DB/models/question.model.js";
 import { httpServer, io } from "./modules/Socket/socket.server.js";
-import { requireJoinedSession } from "./modules/Socket/socket.utils.js";
-
-const activeSessions = new Map();
+import { activeSessions } from "./modules/Socket/socket.sessions.js";
+import {
+  isQuizHost,
+  requireJoinedSession,
+  joinSession,
+} from "./modules/Socket/socket.utils.js";
 
 export const bootstrap = async (app) => {
   await checkConnectionDB();
@@ -23,28 +26,13 @@ export const bootstrap = async (app) => {
   io.on("connection", (socket) => {
     console.log("a user connected:", socket.id);
     console.log(socket.user);
-    const joinSession = (quizCode) => {
-      socket.join(quizCode);
-      if (!activeSessions.has(quizCode)) {
-        activeSessions.set(quizCode, { players: [] });
-      }
-      const session = activeSessions.get(quizCode);
-      if (!session.players.some((p) => p.socketId === socket.id)) {
-        session.players.push({
-          socketId: socket.id,
-          userId: socket.userId,
-          role: socket.role,
-        });
-      }
-    };
 
     socket.on("join-quiz", async ({ quizCode }) => {
-      joinSession(quizCode);
+      joinSession(socket, quizCode);
       console.log(`${socket.id} joined room: ${quizCode}`);
       socket.emit("joined-quiz", { quizCode });
       socket.to(quizCode).emit("player-joined", { playerID: socket.id });
     });
-
     socket.on("startQuiz", async ({ quizCode }) => {
       const isHost = await isQuizHost(quizCode, socket.userId);
       if (!isHost) {
@@ -58,19 +46,20 @@ export const bootstrap = async (app) => {
 
     socket.on(
       "request-quiz",
-      requireJoinedSession(async ({ quizCode }) => {
+      requireJoinedSession(socket)(async ({ quizCode }) => { 
         console.log(`Requesting quiz with code: ${quizCode}`);
         const payload = await getPlayerQuizQuestions(quizCode);
         if (!payload) {
           return socket.emit("quiz-error", { message: "Quiz not found." });
         }
+        console.log("payload", payload);
         socket.emit("quiz-data", payload);
       }),
     );
 
     socket.on(
       "submit-quiz",
-      requireJoinedSession(async ({ quizCode, answers }, player) => {
+      requireJoinedSession(socket)(async ({ quizCode, answers }, player) => {
         try {
           console.log(
             "room members:",
